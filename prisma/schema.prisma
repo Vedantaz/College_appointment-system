@@ -4,13 +4,58 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  PROFESSOR
+}
+
+enum AppointmentStatus {
+  BOOKED
+  CANCELLED
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  password     String
+  role         Role
+  availabilities Availability[]  @relation("ProfAvailabilities")
+  appointments  Appointment[]     @relation("UserAppointments")
+  professorAppointments Appointment[]  @relation("ProfessorAppointments")
+  createdAt    DateTime      @default(now())
+}
+
+model Availability {
+  id          Int       @id @default(autoincrement())
+  professor   User      @relation(fields: [professorId], references: [id], name: "ProfAvailabilities")
+  professorId Int
+  start       DateTime
+  end         DateTime
+  isBooked    Boolean   @default(false)
+  appointment Appointment?
+  createdAt   DateTime  @default(now())
+}
+
+model Appointment {
+  id             Int               @id @default(autoincrement())
+  availability   Availability      @relation(fields: [availabilityId], references: [id])
+  availabilityId Int               @unique
+  student        User              @relation(fields: [studentId], references: [id], name: "UserAppointments")
+  studentId      Int
+  professor      User              @relation(fields: [professorId], references: [id], name:"ProfessorAppointments")
+  professorId    Int
+  status         AppointmentStatus @default(BOOKED)
+  createdAt      DateTime          @default(now())
 }
 
